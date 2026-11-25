@@ -68,8 +68,7 @@
     cursor: pointer;
     transition: transform 0.25s ease;
   }
-  .box.locked { cursor: default; }
-  .box:not(.locked):active { transform: scale(0.97); }
+  .box:active { transform: scale(0.97); }
 
   .box-body {
     position: absolute;
@@ -176,13 +175,7 @@
     0%, 100% { transform: translateY(0); }
     50%      { transform: translateY(-4px); }
   }
-  .box:not(.open):not(.locked) { animation: breathe 4s ease-in-out infinite; }
-
-  .box.locked .lid,
-  .box.locked .box-body,
-  .box.locked .ribbon svg * {
-    filter: saturate(0.7);
-  }
+  .box:not(.open) { animation: breathe 4s ease-in-out infinite; }
 </style>
 </head>
 <body>
@@ -270,44 +263,63 @@
     }
   }
 
-  function openBoxVisual() {
-    box.classList.add("open");
-    box.classList.add("locked");
-    hint.textContent = "vuelve mañana";
-  }
+  let todaysMessage = null;
 
-  function init() {
+  function getOrPickTodaysMessage() {
     const state = loadState();
     const today = todayKey();
     const override = overrides[today];
 
     if (state.date === today && state.message) {
-      const shown = override || state.message;
       if (override && state.message !== override) {
         saveState({ ...state, message: override });
+        return override;
       }
-      openBoxVisual();
-      revealMessage(shown, true);
-      return;
+      return state.message;
     }
 
-    box.addEventListener("click", onOpen, { once: true });
-  }
-
-  function onOpen() {
-    const state = loadState();
-    const today = todayKey();
-    const msg = overrides[today] || pickMessageForToday(state);
-
+    const msg = override || pickMessageForToday(state);
     const used = state.used || [];
     used.push(msg);
     if (used.length > messages.length) used.splice(0, used.length - messages.length);
-
     saveState({ date: today, message: msg, used });
+    return msg;
+  }
 
-    openBoxVisual();
+  function openBoxVisual(instant = false) {
+    box.classList.add("open");
+    hint.textContent = "vuelve mañana para otro";
+    revealMessage(todaysMessage, instant);
+  }
+
+  function closeBoxVisual() {
+    box.classList.remove("open");
+    message.classList.remove("show");
+  }
+
+  function init() {
+    const state = loadState();
+    const today = todayKey();
+
+    if (state.date === today && state.message) {
+      todaysMessage = overrides[today] || state.message;
+      if (overrides[today] && state.message !== overrides[today]) {
+        saveState({ ...state, message: overrides[today] });
+      }
+      openBoxVisual(true);
+    }
+
+    box.addEventListener("click", onToggle);
+  }
+
+  function onToggle() {
+    if (box.classList.contains("open")) {
+      closeBoxVisual();
+      return;
+    }
+    if (!todaysMessage) todaysMessage = getOrPickTodaysMessage();
+    openBoxVisual(false);
     if (navigator.vibrate) navigator.vibrate(15);
-    revealMessage(msg);
   }
 
   init();
