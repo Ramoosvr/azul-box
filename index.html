@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<meta name="theme-color" content="#dce8f2" />
+<title>Caja sorpresa</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@300;400&family=Inter:wght@300;400&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0; padding: 0;
+    min-height: 100%;
+    font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+    overflow: hidden;
+    overscroll-behavior: none;
+    color: #3d4a5c;
+  }
+  body {
+    background: #e6eef6;
+    background-image:
+      radial-gradient(1200px 600px at 20% 10%, #eef4fa 0%, transparent 60%),
+      radial-gradient(900px 500px at 80% 90%, #dce8f2 0%, transparent 60%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100dvh;
+    padding: env(safe-area-inset-top) 24px env(safe-area-inset-bottom);
+    user-select: none;
+    -webkit-user-select: none;
+    position: relative;
+  }
+
+  h1 {
+    font-family: "Fraunces", Georgia, serif;
+    font-weight: 300;
+    font-size: clamp(22px, 6.2vw, 30px);
+    color: #3d4a5c;
+    margin: 0 0 6px;
+    letter-spacing: 0.2px;
+    text-align: center;
+  }
+  .sub {
+    color: #7d8ba0;
+    font-size: 13px;
+    font-weight: 300;
+    margin: 0 0 40px;
+    text-align: center;
+    letter-spacing: 0.4px;
+  }
+
+  .stage {
+    position: relative;
+    width: min(72vw, 260px);
+    aspect-ratio: 1 / 1.1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .box {
+    position: relative;
+    width: 72%;
+    height: 50%;
+    cursor: pointer;
+    transition: transform 0.25s ease;
+  }
+  .box.locked { cursor: default; }
+  .box:not(.locked):active { transform: scale(0.97); }
+
+  .box-body {
+    position: absolute;
+    inset: 0;
+    background: #bfd3e6;
+    border-radius: 22px 22px 18px 18px;
+    box-shadow:
+      0 20px 40px -18px rgba(60, 90, 130, 0.3),
+      inset 0 -6px 14px rgba(70, 100, 140, 0.1);
+  }
+  .box-body::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 0;
+    bottom: 10%;
+    width: 1.5px;
+    transform: translateX(-50%);
+    background: rgba(80, 115, 160, 0.2);
+  }
+
+  .lid {
+    position: absolute;
+    left: -5%;
+    right: -5%;
+    top: -16%;
+    height: 30%;
+    background: #a9c3db;
+    border-radius: 20px 20px 10px 10px;
+    transform-origin: bottom left;
+    transition: transform 0.75s cubic-bezier(.4, 1.4, .5, 1);
+    box-shadow:
+      0 10px 22px -10px rgba(60, 90, 130, 0.3),
+      inset 0 -3px 8px rgba(70, 100, 140, 0.12);
+    z-index: 3;
+  }
+  .lid::after {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 0;
+    bottom: 0;
+    width: 1.5px;
+    transform: translateX(-50%);
+    background: rgba(80, 115, 160, 0.22);
+  }
+
+  .ribbon {
+    position: absolute;
+    left: 50%;
+    top: -28%;
+    transform: translateX(-50%);
+    width: 44%;
+    aspect-ratio: 2.2 / 1;
+    z-index: 4;
+    pointer-events: none;
+    transition: transform 0.75s cubic-bezier(.4, 1.4, .5, 1);
+  }
+  .ribbon svg { width: 100%; height: 100%; display: block; }
+
+  .box.open .lid {
+    transform: rotate(-105deg) translate(-4%, -8%);
+  }
+  .box.open .ribbon {
+    transform: translateX(-50%) translate(-38%, -30%) rotate(-90deg);
+  }
+
+  .message {
+    position: absolute;
+    bottom: 14%;
+    left: 50%;
+    transform: translateX(-50%) translateY(10px);
+    opacity: 0;
+    font-family: "Fraunces", Georgia, serif;
+    font-style: italic;
+    font-weight: 300;
+    font-size: clamp(18px, 5.2vw, 24px);
+    color: #3d4a5c;
+    text-align: center;
+    max-width: 80%;
+    line-height: 1.4;
+    transition: opacity 1s ease, transform 1s ease;
+    pointer-events: none;
+  }
+  .message.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+
+  .hint {
+    margin-top: 36px;
+    color: #9aa8bd;
+    font-size: 12px;
+    font-weight: 300;
+    letter-spacing: 0.4px;
+    text-align: center;
+    min-height: 1.2em;
+  }
+
+  @keyframes breathe {
+    0%, 100% { transform: translateY(0); }
+    50%      { transform: translateY(-4px); }
+  }
+  .box:not(.open):not(.locked) { animation: breathe 4s ease-in-out infinite; }
+
+  .box.locked .lid,
+  .box.locked .box-body,
+  .box.locked .ribbon svg * {
+    filter: saturate(0.7);
+  }
+</style>
+</head>
+<body>
+  <h1>Una cajita para ti</h1>
+  <p class="sub">una sorpresa cada día</p>
+
+  <div class="stage">
+    <div class="box" id="box" role="button" aria-label="Abrir caja sorpresa">
+      <div class="lid"></div>
+      <div class="ribbon" aria-hidden="true">
+        <svg viewBox="0 0 100 50" xmlns="http://www.w3.org/2000/svg">
+          <path d="M50 28 C 30 10, 10 14, 14 30 C 18 44, 40 38, 50 30 Z"
+                fill="#8fb0cc" opacity="0.95"/>
+          <path d="M50 28 C 70 10, 90 14, 86 30 C 82 44, 60 38, 50 30 Z"
+                fill="#8fb0cc" opacity="0.95"/>
+          <ellipse cx="50" cy="30" rx="6" ry="7" fill="#7a9db9"/>
+        </svg>
+      </div>
+      <div class="box-body"></div>
+    </div>
+  </div>
+
+  <p class="message" id="message"></p>
+  <p class="hint" id="hint">toca para abrir</p>
+
+<script>
+  const messages = [
+    "te ves linda hoy",
+    "que tengas un buen día",
+    "me encanta tu cabello",
+    "tu sonrisa me alegra",
+    "hueles increíble",
+    "me gusta cómo piensas",
+    "eres mi lugar favorito",
+    "tus ojos hoy brillan distinto",
+    "me encanta tu risa",
+    "estás preciosa",
+    "pienso en ti ahora",
+    "me gusta tu voz",
+    "eres suave y fuerte a la vez",
+    "me encanta cómo caminas",
+    "qué suerte tenerte",
+    "tu calma me sostiene",
+    "me gusta estar contigo en silencio",
+    "eres bonita por dentro también",
+    "me encanta tu forma de querer",
+    "hoy también me gustas"
+  ];
+
+  const STORAGE_KEY = "caja_sorpresa_v1";
+  const box = document.getElementById("box");
+  const message = document.getElementById("message");
+  const hint = document.getElementById("hint");
+
+  function todayKey() {
+    const d = new Date();
+    return d.getFullYear() + "-" + (d.getMonth()+1) + "-" + d.getDate();
+  }
+
+  function loadState() {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; }
+    catch { return {}; }
+  }
+  function saveState(s) {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(s)); } catch {}
+  }
+
+  function pickMessageForToday(state) {
+    const used = new Set(state.used || []);
+    const available = messages.filter(m => !used.has(m));
+    const pool = available.length ? available : messages;
+    return pool[Math.floor(Math.random() * pool.length)];
+  }
+
+  function revealMessage(msg, instant = false) {
+    message.textContent = msg;
+    if (instant) {
+      message.classList.add("show");
+    } else {
+      setTimeout(() => message.classList.add("show"), 600);
+    }
+  }
+
+  function openBoxVisual() {
+    box.classList.add("open");
+    box.classList.add("locked");
+    hint.textContent = "vuelve mañana";
+  }
+
+  function init() {
+    const state = loadState();
+    const today = todayKey();
+
+    if (state.date === today && state.message) {
+      openBoxVisual();
+      revealMessage(state.message, true);
+      return;
+    }
+
+    box.addEventListener("click", onOpen, { once: true });
+  }
+
+  function onOpen() {
+    const state = loadState();
+    const today = todayKey();
+    const msg = pickMessageForToday(state);
+
+    const used = state.used || [];
+    used.push(msg);
+    if (used.length > messages.length) used.splice(0, used.length - messages.length);
+
+    saveState({ date: today, message: msg, used });
+
+    openBoxVisual();
+    if (navigator.vibrate) navigator.vibrate(15);
+    revealMessage(msg);
+  }
+
+  init();
+</script>
+</body>
+</html>

@@ -1,0 +1,5 @@
+Screenshot*.jpg
+Screenshot*.png
+*.log
+.DS_Store
+Thumbs.db
